@@ -1,4 +1,4 @@
-import tkinter as tk
+﻿import tkinter as tk
 from tkinter import ttk
 import random
 
@@ -246,26 +246,24 @@ class GameApp:
     def quit_game(self):
         self.master.destroy()
 
-    def computer_move(self):
-            
-            # atkomentet kad gatavs
+    def computer_move(self):  
+ 
+        if self.computer_mode == "minmax":
+           print(self.remaining_numbers)
+           max_score, best_move = self.minimax_move(self.remaining_numbers, True) # izsauc minmax funkciju
+           print("best_move", best_move, "max_score", max_score)
+           self.choose_number(best_move[0])
 
         #if self.computer_mode == "alfabeta":
         #    best_move = self.alfabeta_move() # izsauc alfabeta funkciju
-        #    self.choose_number(best_move)
-
-        #elif self.computer_mode == "minmax":
-        #    best_move = self.minmax_move() # izsauc minmax funkciju
-        #    self.choose_number(best_move)
+        #    self.choose_number(best_move)  
         
-        
-        
-        #else:
-            best_move = self.find_best_move() #iegust maksimalo skatili no virknes
-            if best_move is not None:
-                self.choose_number(best_move) # "Nospiež" skaitli no virknes
-            else:
-                print("Nav Gajienu")
+        else:
+          best_move = self.find_best_move(self, False) #iegust maksimalo skatili no virknes
+          if best_move is not None:
+              self.choose_number(best_move) # "Nospiež" skaitli no virknes
+          else:
+             print("Nav Gajienu")
 
     def find_best_move(self):
         if not self.remaining_numbers:
@@ -277,12 +275,48 @@ class GameApp:
     # number_sequence ir saraksts ar skaitļiem
     # pirms jebkadas funkciajs izsauksanas lietot self."funkcija"(parametrs ja tads ir)
 
-    def alfabeta_move(self): # Šeit implimentet alfabeta
+    def alfabeta_move(self, is_maximizing_player): # Šeit implimentet alfabeta
         print("ir alfabeta")
     
     
-    def minmax_move(self):  # Šeit implimentet minamx
-        print("ir minmax")
+    def minimax_move(self, nums, is_maximizing_player):
+        if not nums:
+            return 0, []
+
+        if is_maximizing_player:
+            max_score = float('-inf')
+            best_moves = []
+            for i in range(len(nums)):
+                score = nums[i]
+                best_subscore = score
+                best_submoves = [nums[i]]
+                for j in range(2, nums[i] // 2 + 1):
+                    subscore, submoves = self.minimax_move([j, nums[i] - j], False)
+                    subscore = max(subscore, j)
+                    if subscore > best_subscore:
+                        best_subscore = subscore
+                        best_submoves = [j] + submoves
+                if best_subscore > max_score:
+                    max_score = best_subscore
+                    best_moves = best_submoves
+            return max_score, best_moves
+        else:
+            min_score = float('inf')
+            best_moves = []
+            for i in range(len(nums)):
+                score = nums[i]
+                best_subscore = score
+                best_submoves = [nums[i]]
+                for j in range(2, nums[i] // 2 + 1):
+                    subscore, submoves = self.minimax_move([j, nums[i] - j], True)
+                    subscore = min(subscore, j)
+                    if subscore < best_subscore:
+                        best_subscore = subscore
+                        best_submoves = [j] + submoves
+                if best_subscore < min_score:
+                    min_score = best_subscore
+                    best_moves = best_submoves
+            return min_score, best_moves
 
 
 
