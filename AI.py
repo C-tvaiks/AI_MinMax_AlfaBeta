@@ -1,6 +1,8 @@
 ﻿import tkinter as tk
 from tkinter import ttk
-import random
+import tree
+import time
+
 
 class GameApp:
     def __init__(self, master):
@@ -31,6 +33,13 @@ class GameApp:
         self.player2_points = 0
         self.computer_mode = None
 
+        self.root_node = None
+        self.execution_time = None
+
+    def update_execution_time(self):
+        current_player_text = f"Izpildes laiks: {self.execution_time}"
+        print(self.execution_time)
+        self.execution_time_label.config(text=current_player_text)
 
     def vs_computer_mode(self):
         self.clear_center_frame()
@@ -52,12 +61,12 @@ class GameApp:
         self.clear_center_frame()
         self.computer_mode = "minmax"
         self.choose_first_turn()
-    
+
     def alfabeta(self):
         self.clear_center_frame()
         self.computer_mode = "alfabeta"
         self.choose_first_turn()
-    
+
     def choose_first_turn(self):
 
         self.mode_label = tk.Label(self.center_frame, text="Izvēlieties kurš iet pirmais:", font=("Helvetica", 14))
@@ -68,7 +77,7 @@ class GameApp:
 
         self.computer_turn_button = tk.Button(self.center_frame, text="Dators", font=("Helvetica", 12), command=self.computer_turn)
         self.computer_turn_button.pack(side=tk.LEFT, padx=10)
-    
+
     def computer_turn(self):
         self.current_player = 2
         self.create_length_selection()
@@ -96,11 +105,8 @@ class GameApp:
 
     def generate_sequence(self):
         length = int(self.length_combobox.get())
-        self.number_sequence = self.generate_random_sequence(length)
+        self.number_sequence = tree.generate_sequence(length)
         self.start_game()
-
-    def generate_random_sequence(self, length):
-        return [random.choice([1, 2, 3, 4]) for _ in range(length)]
 
     def start_game(self):
         self.clear_center_frame()
@@ -116,6 +122,8 @@ class GameApp:
 
         self.turn_label = tk.Label(self.main_frame, text="Paņemšanas gājiens: Spēlētājs 1", font=("Helvetica", 14))
         self.turn_label.pack()
+        self.execution_time_label = tk.Label(self.main_frame, text="Izpildes laiks: 0", font=("Helvetica", 14))
+        self.execution_time_label.pack()
 
         self.player1_points_label = tk.Label(self.main_frame, text="Spēlētājs 1 punkti: 0", font=("Helvetica", 14))
         self.player1_points_label.pack()
@@ -126,9 +134,8 @@ class GameApp:
             self.player2_points_label = tk.Label(self.main_frame, text="Spēlētājs 2 punkti: 0", font=("Helvetica", 14))
             self.player2_points_label.pack()
 
-
         self.buttons = []
-        for num in self.number_sequence: # number_sequence ir saraksts ar skaitļiem
+        for num in self.number_sequence:
             button = tk.Button(self.center_frame, text=num, font=("Helvetica", 16), command=lambda n=num: self.choose_number(n))
             button.pack(side=tk.LEFT, padx=5, pady=5)
             self.buttons.append(button)
@@ -141,11 +148,12 @@ class GameApp:
             if self.current_player == 2:
                 self.computer_move()
 
-    
+        self.root_node = tree.GameNode(self.number_sequence, 0, 0, 0, 'start')
+        tree.build_tree(self.root_node, 5)
 
     def switch_players(self):
         self.current_player = 2 if self.current_player == 1 else 1
-    
+
     def update_turn_label(self):
         current_player_text = f"Paņemšanas gājiens: {'Spēlētājs 1' if self.current_player == 1 else 'Dators' if self.game_mode == 'vs_computer' else 'Spēlētājs 2'}"
         self.turn_label.config(text=current_player_text)
@@ -218,7 +226,7 @@ class GameApp:
         self.player1_points_label.pack_forget()
         self.player2_points_label.pack_forget()
         self.turn_label.pack_forget()
-    
+
         if self.player1_points > self.player2_points:
             winner_text = "Uzvarēja Spēlētājs 1"
             self.points_label.config(text=f"{winner_text} ar {self.player1_points} punktiem")
@@ -231,13 +239,13 @@ class GameApp:
         else:
             winner_text = "Spēle ir neizšķirta"
             self.points_label.config(text=f"{winner_text}")
-        
+
         play_again_button = tk.Button(self.center_frame, text="Spēlēt atkal", font=("Helvetica", 12), command=self.play_again)
         play_again_button.pack(side=tk.LEFT, padx=20, pady=20)
 
         quit_button = tk.Button(self.center_frame, text="Iziet", font=("Helvetica", 12), command=self.quit_game)
         quit_button.pack(side=tk.RIGHT, padx=20, pady=20)
-    
+
     def play_again(self):
         self.master.destroy()
         if __name__ == "__main__":
@@ -247,38 +255,91 @@ class GameApp:
         self.master.destroy()
 
     def computer_move(self):  
- 
+        start_time = time.time()
         if self.computer_mode == "minmax":
-           print(self.remaining_numbers)
-           max_score, best_move = self.minimax_move(self.remaining_numbers, True) # izsauc minmax funkciju
-           print("best_move", best_move, "max_score", max_score)
-           self.choose_number(best_move[0])
-
-        #if self.computer_mode == "alfabeta":
-        #    best_move = self.alfabeta_move() # izsauc alfabeta funkciju
-        #    self.choose_number(best_move)  
-        
+            print(self.remaining_numbers)
+            max_score, best_move = self.minimax_move(self.remaining_numbers, True)
+            print("best_move", best_move, "max_score", max_score)
+        elif self.computer_mode == "alfabeta":
+            print(self.remaining_numbers)
+            # self.root_node = None
+            # self.root_node = tree.GameNode(self.number_sequence, 0, self.player1_points, self.player2_points, 'start')
+            # tree.build_tree(self.root_node, 5)
+            best_move = self.alfabeta_move()
+            print("best_move", best_move)
         else:
-          best_move = self.find_best_move(self, False) #iegust maksimalo skatili no virknes
-          if best_move is not None:
-              self.choose_number(best_move) # "Nospiež" skaitli no virknes
-          else:
-             print("Nav Gajienu")
+            best_move = self.find_best_move(self.remaining_numbers, False)
+            print("best_move", best_move)
 
-    def find_best_move(self):
-        if not self.remaining_numbers:
-            return None 
-        return max(self.remaining_numbers)
-    
+        end_time = time.time()
+        self.execution_time = (end_time - start_time) * 1000
+
+        self.update_execution_time()
+
+        if best_move:
+            action, number = best_move
+            if action == "take":
+                self.choose_number(number)
+            elif action == "split":
+                self.split_number(number)
+                pass
 
 
-    # number_sequence ir saraksts ar skaitļiem
-    # pirms jebkadas funkciajs izsauksanas lietot self."funkcija"(parametrs ja tads ir)
+    def alfabeta_move(self):
+        
+        def alpha_beta(node, alpha, beta, maximizing_player):
+            if node.level == 5 or not node.children:
+                # Предположим, что оценка узла определяется как разница между очками игроков
+                return node.player1_score - node.player2_score if maximizing_player else node.player2_score - node.player1_score
 
-    def alfabeta_move(self, is_maximizing_player): # Šeit implimentet alfabeta
-        print("ir alfabeta")
-    
-    
+            if maximizing_player:
+                value = float('-inf')
+                for child in node.children:
+                    value = max(value, alpha_beta(child, alpha, beta, False))
+                    alpha = max(alpha, value)
+                    if alpha >= beta:
+                        break  # Отсечение β
+                return value
+            else:
+                value = float('inf')
+                for child in node.children:
+                    value = min(value, alpha_beta(child, alpha, beta, True))
+                    beta = min(beta, value)
+                    if beta <= alpha:
+                        break  # Отсечение α
+                return value
+            
+        def find_best_move(root):
+            best_value = float('-inf')
+            best_move_action = None
+            best_move_number = None
+            alpha = float('-inf')
+            beta = float('inf')
+            for child in root.children:
+                value = alpha_beta(child, alpha, beta, True)
+                if value > best_value:
+                    best_value = value
+                    best_move_action = "take" if "take" in child.action else "split"
+                    if best_move_action == "take":
+                        best_move_number = int(child.action.split()[1])  # Извлекаем число из строки действия
+                    else:
+                        best_move_number = 2 if "split 2" in child.action else 4
+            self.root_node = None
+            self.root_node = tree.GameNode(child.state, 0, child.player1_score, child.player2_score, 'start')
+            tree.build_tree(self.root_node, 5)
+            return [best_move_number, best_move_action]
+            
+        best_move = find_best_move(self.root_node)
+        return best_move
+
+
+
+
+
+
+
+
+
     def minimax_move(self, nums, is_maximizing_player):
         if not nums:
             return 0, []
@@ -355,6 +416,38 @@ class GameApp:
             if self.game_mode == "vs_computer" and self.current_player == 2:
                 self.computer_move()
 
+    def split_number(self, number):
+        if number not in [2, 4]:
+            return  # Разделение возможно только для чисел 2 и 4
+
+        # Обновляем состояние игры в зависимости от разделяемого числа
+        new_numbers = [1, 1] if number == 2 else [2, 2]
+
+        if self.current_player == 2 and self.game_mode == "vs_computer":
+            # Если это ход компьютера и играем против компьютера
+            self.remaining_numbers.remove(number)  # Удаляем разделяемое число
+            self.remaining_numbers.extend(new_numbers)  # Добавляем результат разделения
+            # Обновляем интерфейс
+            self.update_buttons_text()
+            self.switch_players()
+            self.update_turn_label()
+            if not self.remaining_numbers:
+                self.end_game()
+        else:
+            # Если это ход игрока
+            self.remaining_numbers.remove(number)  # Удаляем разделяемое число
+            self.remaining_numbers.extend(new_numbers)  # Добавляем результат разделения
+            # Для игрока, возможно, нужно добавить дополнительные очки или логику
+            # Обновляем интерфейс
+            self.update_buttons_text()
+            self.switch_players()
+            self.update_turn_label()
+            if not self.remaining_numbers:
+                self.end_game()
+
+        # Если после хода компьютера, вызываем ход компьютера
+        if self.game_mode == "vs_computer" and self.current_player == 2:
+            self.computer_move()
 
 def main():
     root = tk.Tk()

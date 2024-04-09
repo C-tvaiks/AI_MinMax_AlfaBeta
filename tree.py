@@ -1,68 +1,60 @@
 import random
 
+class GameNode:
+    def __init__(self, state, player1_score, player2_score, level, action, player_turn=1):
+        self.state = state
+        self.player1_score = player1_score
+        self.player2_score = player2_score
+        self.level = level
+        self.action = action
+        self.player_turn = player_turn
+        self.children = []
+        self.flat_list = []
+
 def generate_sequence(length):
     return [random.randint(1, 4) for _ in range(length)]
 
-def computer(sequence, current_depth, player_scores, current_player):
-    index = []
-    move = []
-    results = game_tree(sequence, current_depth, index, player_scores, current_player, move)
+def build_tree(node, max_depth):
+    if node.level == max_depth:
+        return
+    
+    for i, num in enumerate(node.state):
+        # Возможный ход: взять число
+        if num in [1, 2, 3, 4]:  # Проверяем наличие числа для выполнения хода
+            new_state = node.state[:]
+            new_state.pop(i)  # Удаляем взятое число
+            if node.player_turn == 1:
+                child = GameNode(new_state, node.player1_score + num, node.player2_score, node.level + 1, f"take {num}", 2)
+            else:
+                child = GameNode(new_state, node.player1_score, node.player2_score + num, node.level + 1, f"take {num}", 1)
+            node.children.append(child)
+            build_tree(child, max_depth)
+    
+    # Проверяем возможность выполнения других действий
+    if 2 in node.state:
+        new_state = node.state[:]
+        new_state.remove(2)
+        new_state.extend([1, 1])  # Разделяем 2 на два числа 1
+        child = GameNode(new_state, node.player1_score, node.player2_score, node.level + 1, "split 2", node.player_turn)
+        node.children.append(child)
+        build_tree(child, max_depth)
+    
+    if 4 in node.state:
+        new_state = node.state[:]
+        new_state.remove(4)
+        new_state.extend([2, 2])  # Разделяем 4 на два числа 2
+        child = GameNode(new_state, node.player1_score + 1, node.player2_score, node.level + 1, "split 4", node.player_turn)
+        node.children.append(child)
+        build_tree(child, max_depth)
 
-    sorted_tree = [results[0]]
-
-    for i in range(3):
-        for each in results:
-            if each[1] == i+1:
-                eksiste = False
-                for each_sorted in sorted_tree:
-                    if sorted(each[2]) == sorted(each_sorted[2]) and each[3] == each_sorted[3]:
-                        eksiste = True
-                if eksiste == False:
-                    sorted_tree.append(each)
-
-    for each in sorted_tree:
-        print(each)
-
-
-def game_tree(sequence, current_depth, index, player_scores, current_player, move):
-    results = []
-    if current_depth > 3 or len(sequence) == 0:
-        return results
-    else:
-        varianti = algo(sequence, current_depth, index, player_scores, current_player, move)
-        for each in varianti:
-            results.extend([[each[1], current_depth, each[0], each[2], each[3]]])
-            result_sequence = game_tree(each[0], current_depth+1, each[1], each[2], (current_player + 1) % 2, each[3])
-            results.extend(result_sequence)
-        return results
-
-def algo(sequence, current_depth, index, player_scores, current_player, move):
-    new_player_scores = [player_scores[0], player_scores[1]]
-    variants = []
-    for i in range(len(sequence)):
-        new_index = index + [i]  # Jauna indeksa pievienošana
-        if sequence[i] == 2:
-            new_sequence = sequence[:i] + [1, 1] + sequence[i+1:]
-            new_move = move + ["split"]
-            variants.append([new_sequence, new_index, [new_player_scores[0],new_player_scores[1]], new_move])
-        elif sequence[i] == 4:
-            new_sequence = sequence[:i] + [2, 2] + sequence[i+1:]
-            new_player_scores[current_player] = player_scores[1] + 1
-            new_move = move + ["split"]
-            variants.append([new_sequence, new_index, [new_player_scores[0],new_player_scores[1]], new_move])
-            new_player_scores[current_player] = player_scores[1] -1
-        new_move = move + ["take"]
-        new_sequence = sequence[:i] + sequence[i+1:]
-        new_player_scores[current_player] = player_scores[1] + sequence[i]
-        variants.append([new_sequence, new_index, [new_player_scores[0],new_player_scores[1]], new_move])
-
-    return variants
-
-if __name__ == "__main__":
-    length = int(input("Enter the length of the sequence (15-20): "))
-    sequence = generate_sequence(length)
-    print(sequence)
-    current_depth = 1
-    player_scores = [0,0]
-    current_player = 0
-    computer(sequence, current_depth, player_scores, current_player)
+def flatten_tree(node, unique_nodes=None):
+    if unique_nodes is None:
+        unique_nodes = set()
+    node_key = (tuple(node.state), node.player1_score, node.player2_score, node.action)
+    if node_key in unique_nodes:
+        return []
+    unique_nodes.add(node_key)
+    flat_list = [node]
+    for child in node.children:
+        flat_list.extend(flatten_tree(child, unique_nodes))
+    return flat_list
